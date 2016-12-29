@@ -1,0 +1,22 @@
+{{ ansible_managed | comment }}
+
+ClusterName=cluster
+ControlMachine={{ ansible_hostname }}
+Include /etc/slurm/slurm-nodes.conf
+Include /etc/slurm/slurm-partitions.conf
+Include /etc/slurm/slurm-user.conf
+
+# Accounting.
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageHost=localhost
+#AccountingStorageBackupHost=
+AccountingStorageUser=slurm
+
+# Logging 
+SlurmctldLogFile=/var/log/slurm/slurmctld.log 
+SlurmdLogFile=/var/log/slurm/slurmd.log 
+
+#BackupController=
+StateSaveLocation={{ slurm_spool_dir }}
+AuthType=auth/munge
+

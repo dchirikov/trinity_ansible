@@ -1,0 +1,4 @@
+- name: Install centos-minimal
+  yum:
+    name: "@^Minimal Install"
+    state: installed

@@ -1,0 +1,84 @@
+- name: Get osimage path
+  set_fact:
+    def_osimage_path: "{{  trix_path_images }}/{{ c.def_osimage_name }}"
+    def_osimage_name: "{{ c.def_osimage_name }}"
+- name: Create dir for compute osimage
+  file:
+    name: "{{ def_osimage_path }}" 
+    state: directory
+
+- name: Install yum-utils
+  yum:
+    name: yum-utils
+    state: present
+
+- name: check if we have rpm DB already
+  stat:
+    path: "{{ def_osimage_path }}/var/lib/rpm"
+  register: def_osimage_rpmdb
+  
+
+- name: Init rpm DB {{ def_osimage_path }}/var/lib/rpm
+  command: "/usr/bin/rpm --root {{ def_osimage_path }} --initdb"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Download latest centos-release
+  command: "/usr/bin/yumdownloader --destdir {{ def_osimage_path }} centos-release"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Install centos-release to {{ def_osimage_path }}
+  command: "/usr/bin/rpm --root {{ def_osimage_path }} -ivh {{ def_osimage_path }}/centos-release-*.rpm"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Cleanup centos-release
+  shell: "/usr/bin/rm -rf {{ def_osimage_path }}/centos-release-*.rpm"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Create basic /dev files
+  command: "/usr/bin/mknod {{ def_osimage_path }}/dev/{{ item.dev }} {{ item.t }} {{ item.ma }} {{ item.mi }} creates={{ def_osimage_path }}/dev/{{ item.dev }}"
+  with_items:
+    - { dev: "null",    mo: "666", t: 'c', ma: 1, mi: 3 } # device, mode, type, major, minor
+    - { dev: "zero",    mo: "666", t: 'c', ma: 1, mi: 5 }
+    - { dev: "random",  mo: "666", t: 'c', ma: 1, mi: 8 }
+    - { dev: "urandom", mo: "666", t: 'c', ma: 1, mi: 9 }
+    - { dev: "console", mo: "600", t: 'c', ma: 5, mi: 1 }
+    - { dev: "ptmx",    mo: "666", t: 'c', ma: 5, mi: 2 }
+    - { dev: "tty",     mo: "666", t: 'c', ma: 5, mi: 0 }
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Copy local yum.conf
+  copy:
+    src: "/etc/yum.conf"
+    dest: "{{ def_osimage_path }}/etc/"
+  when: def_osimage_rpmdb.stat.exists == False
+
+#- name: Copy gpg keys
+#  copy:
+#    src: "/etc/pki/rpm-gpg"
+#    dest: "{{ def_osimage_path }}/etc/pki/"
+
+- name: Copy yum.conf for chrooted env
+  copy:
+    src: "{{ def_osimage_path }}/etc/yum.conf"
+    dest: "{{ def_osimage_path }}/etc/yum-chroot.conf"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Patch yum-chroot.conf
+  lineinfile:
+    dest: "{{ def_osimage_path }}/etc/yum-chroot.conf"
+    line: "installroot={{ def_osimage_path }}"
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Install Centos group @Base
+  yum:
+    conf_file: "{{ def_osimage_path }}/etc/yum-chroot.conf"
+    name: "@Base"
+    state: installed
+    disable_gpg_check: yes
+  when: def_osimage_rpmdb.stat.exists == False
+
+- name: Register new image
+  add_host:
+    name: '{{ def_osimage_path }}'
+    groups: "luna-osimages"
+    ansible_connection: chroot

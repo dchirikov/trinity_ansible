@@ -1,0 +1,54 @@
+ctrl_fqdn: "master.cluster"
+
+# Defauls
+#trix_path:
+#  root: "/trinity"
+#  home: "/trinity/home"
+#  images: "/trinity/images"
+#  shared: "/trinity/shared"
+#  local: "/trinity/local"
+
+# Defaults
+#slurmdbd:
+#  mysql_db: slurm_accounting
+#  mysql_user: slurm_accounting
+
+def_osimage_name: "compute"
+
+interfaces:
+  # Limitations
+  # 1. Only 0 or 1 interface of each type (_IDENTIFIER) is supported.
+  #    can be [ external | provisioning | bmc ]
+  # 2. _DOMAIN should be unique. If omitted, then _IDENTIFIER will be taken as a domain name
+  # 3. ifcfg scripts format is used
+  #
+  - DEVICE: "eth0"
+    BOOTPROTO: "dhcp"
+    NM_CONTROLLED: "no"
+    MTU: 1500
+    _IDENTIFIER: "external" # DON'T CHANGE THE NAME. Hint for networks.py
+
+  - DEVICE: "ens8"
+    BOOTPROTO: "none"
+    IPADDR: "10.40.250.254"
+    PREFIX: "16"
+    NM_CONTROLLED: "no"
+    _IDENTIFIER: "provisioning" # DON'T CHANGE THE NAME. Hint for networks.py
+    _DOMAIN: "cluster" # name for Luna's network
+
+  - DEVICE: "ens8:1" # alias
+    BOOTPROTO: "none"
+    IPADDR: "10.50.250.254"
+    PREFIX: "16"
+    NM_CONTROLLED: "no"
+    _IDENTIFIER: "bmc" # DON'T CHANGE THE NAME. Hint for networks.py
+    _DOMAIN: "ipmi"
+
+  - DEVICE: "ens9"
+    BOOTPROTO: "none"
+    IPADDR: "10.60.250.254"
+    PREFIX: "16"
+    NM_CONTROLLED: "no"
+    _DOMAIN: "ib"
+
+dns_servers: [ ] # if empty, google dns or servers provided by dhcp will be used

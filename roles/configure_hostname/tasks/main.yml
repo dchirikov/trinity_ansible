@@ -1,0 +1,21 @@
+- name: Define controller's fqdn if not defined in controller_vars
+  set_fact:
+    trix_ctrl_fqdn: "{{ ansible_nodename }}"
+  when: ansible_hostname != "localhost"
+  
+- name: Define controller's fqdn if defined in controller_vars
+  set_fact:
+    trix_ctrl_fqdn: "{{ c.ctrl_fqdn }}"
+  when: c.ctrl_fqdn is defined
+
+- name: Define default controller's fqdn
+  set_fact:
+    trix_ctrl_fqdn: "controller.cluster"
+  when: trix_ctrl_fqdn is not defined
+
+- name: Define controller's hostname if c.fqdn is defined
+  hostname:
+    name: "{{ trix_ctrl_fqdn }}"
+
+- name: Gather updated facts
+  setup:

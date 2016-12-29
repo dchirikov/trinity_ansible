@@ -1,0 +1,219 @@
+- name: Create munge user
+  user:
+    name: munge
+    shell: /sbin/nologin
+    system: yes
+   
+- name: Create slurm user
+  user:
+    name: slurm
+    shell: /sbin/nologin
+    system: yes
+  
+#- name: Print IDs or mongo and slurm users
+#  debug:
+#    msg: "{{ item[0] }} ({{ item[1] }}) - {{ lookup('csvfile', '{{ item[0] }} file={{ item[1] }} delimiter=: col=2') }}"
+#  with_nested:
+#    - ['munge' , 'slurm']
+#    - ['/etc/passwd' , '/etc/group']
+
+- name: Install SLURM
+  yum:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+   - http://rpmbuild.clustervision.com/trinity/centos/7/clustervision-repo-1.0-tr7.el7.centos.x86_64.rpm
+   - munge
+   - slurm
+   - slurm-devel
+   - slurm-munge
+   - slurm-openlava
+   - slurm-pam_slurm
+   - slurm-perlapi
+   - slurm-plugins
+   - slurm-seff
+   - slurm-sjobexit
+   - slurm-sjstat
+   - slurm-slurmdbd
+   - slurm-slurmdb-direct
+   - slurm-sql
+   - slurm-torque
+
+- name: Create logdir
+  file:
+    name: "/var/log/slurm"
+    state: directory
+    owner: slurm
+    group: slurm
+    mode: 0750
+
+- name: Create shared munge folder
+  file:
+    name: "{{ trix_path_shared }}/etc/munge"
+    state: directory
+    owner: munge
+    group: munge
+    mode: 0700
+
+- name: Get status of munge.key
+  stat:
+    path: "{{ trix_path_shared }}/etc/munge/munge.key"
+  register: file_munge_key
+
+- name: Create munge.key
+  command: "/usr/bin/dd if=/dev/urandom bs=1 count=1024 of={{ trix_path_shared }}/etc/munge/munge.key"
+  when: file_munge_key.stat.exists == False
+
+- name: Set munge.key permissions
+  file:
+    name: "{{ trix_path_shared }}/etc/munge/munge.key"
+    state: file
+    owner: munge
+    group: munge
+    mode: 0400
+
+- name: Configure default variables for slurmdbd
+  set_fact:
+    slurm_db: "{{ c.slurmdbd.mysql_db | default('slurm_accounting') }}"
+    slurm_db_user: "{{ c.slurmdbd.mysql_user | default('slurm_accounting') }}"
+  when: c.slurmdbd is defined
+
+- name: Configure variables
+  set_fact:
+    slurm_db: "slurm_accounting"
+    slurm_db_user: "slurm_accounting"
+  when: c.slurmdbd is undefined
+
+- name: Aquire password for DB user (generate or use one from /etc/trinity/passwords)
+  set_fact:
+    slurm_db_pass: "{{ lookup('password',
+                          '/trinity/local/passwords/mysql/{{ slurm_db_user }}.txt  
+                           chars=ascii_letters,digits,hexdigits') }}"
+
+- name: Create DB for accounting
+  mysql_db:
+    name: "{{ slurm_db }}"
+    state: present
+    
+- name: Create DB user for accounting
+  mysql_user:
+    name: "{{ slurm_db_user }}"
+    password: "{{ slurm_db_pass }}"
+    priv: "{{ slurm_db }}.*:ALL"
+    state: present
+
+- name: Define slurm's spool dir
+  set_fact:
+      slurm_spool_dir: "{{ trix_path_local }}/var/spool/slurm"
+
+- name: Create spool dir
+  file:
+    name: "{{ slurm_spool_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0750
+
+- name: Get /etc/slurm status
+  stat:
+    path: "/etc/slurm"
+  register: file_etc_slurm
+
+#- name: debug
+#  debug:
+#    msg: "{{ etc_slurm }}"
+
+#- name: exit
+#  fail: msg="aaaaa"
+
+- name: Move /etc/slurm to exported dir
+  command: /usr/bin/mv /etc/slurm "{{ trix_path_shared }}"/etc/
+  when: file_etc_slurm.stat.exists == True and file_etc_slurm.stat.isdir == True
+
+- name: Create symlink from {{ trix_path_shared }}/etc/slurm to /etc/slurm
+  file:
+    src: "{{ trix_path_shared }}/etc/slurm"
+    dest: "/etc/slurm"
+    state: link
+
+- name: Copy .conf files 
+  copy:
+    src: "{{ item }}"
+    dest: "{{ trix_path_shared }}/etc/slurm/{{ item }}"
+    force: no
+  with_items:
+   - "slurm-nodes.conf"
+   - "slurm-partitions.conf"
+   - "slurm-user.conf"
+
+- name: Render slurm.conf and slurmdbd.conf
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ trix_path_shared }}/etc/slurm/{{ item }}"
+    backup: yes
+  with_items:
+    - "slurmdbd.conf"
+    - "slurm.conf"
+
+- name: Create systemd unit dirs
+  file:
+    name: "/etc/systemd/system/{{ item }}.service.d"
+    state: directory
+  with_items:
+    - "munge"
+    - "slurmdbd"
+    - "slurmctld"
+
+- name: Render systemd units
+  template:
+    src: "systemd/{{ item }}.service.d/trix_specific.conf.j2"
+    dest: "/etc/systemd/system/{{ item }}.service.d/trix_specific.conf"
+    backup: yes
+  with_items:
+    - "munge"
+    - "slurmdbd"
+    - "slurmctld"
+
+- name: Start services
+  systemd:
+    daemon_reload: yes
+    name: "{{ item }}.service"
+    state: started
+    enabled: yes
+  with_items:
+    - "munge"
+    - "slurmdbd"
+    - "slurmctld"
+
+- name: Register slurm cluster in slurmdbd
+  shell: "/usr/bin/sacctmgr -i add cluster cluster >/dev/null 2>&1; /usr/bin/sacctmgr -p -n show cluster | /usr/bin/grep -q cluster"
+  register: sacctmgr_success
+  until: sacctmgr_success|success
+  retries: 6
+  delay: 10
+
+- name: TEST 1/2. Run sinfo
+  shell: "/usr/bin/sinfo -h 2>/dev/null"
+  register: sinfo_output
+
+- name: TEST 1/2. Fail if no lines in sinfo stdout
+  fail: 
+    msg: "No partitions in sinfo output"
+  when: "{{ sinfo_output.stdout_lines|length }} == 0"
+
+- name: TEST 1/2. Print sinfo output
+  debug:
+    msg: "{{ sinfo_output.stdout }}"
+
+- name: TEST 2/2. Run squeue
+  shell: "/usr/bin/squeue 2>/dev/null"
+  register: squeue_output
+
+- name: TEST 2/2. Fail if no lines in squeue stdout
+  fail: 
+    msg: "No lines in squeue"
+  when: "{{ squeue_output.stdout_lines|length }} == 0"
+
+- name: TEST 2/2. Print squeue output
+  debug:
+    msg: "{{ squeue_output.stdout }}"

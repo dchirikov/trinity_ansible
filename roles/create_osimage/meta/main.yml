@@ -1,0 +1,3 @@
+---
+dependencies:
+  - { role: standard_config }

@@ -1,0 +1,17 @@
+- name: Add epel repository
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: http://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+
+- name: Install CV repo rpm
+  yum:
+    name: "http://rpmbuild.clustervision.com/trinity/centos/7/clustervision-repo-1.0-tr7.el7.centos.x86_64.rpm"
+    state: present
+
+- name: Install CV repo
+  yum_repository:
+    name: clustervision-repo-local  # TODO ask the name of the repo
+    description: clustervision-repo-local 
+    baseurl: http://rpmbuild.clustervision.com/trinity/tr17/centos/7/local/
+    gpgcheck: no

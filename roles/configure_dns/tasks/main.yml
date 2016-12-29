@@ -1,0 +1,35 @@
+- name: Install BIND
+  yum: name={{ item }} state=installed
+  with_items:
+   - bind
+   - bind-chroot
+
+- name: Configure BIND
+  template:
+    src: named.conf.j2
+    dest: /etc/named.conf
+    backup: yes
+
+- name: Create /etc/named.luna.zones
+  file:
+    dest: /etc/named.luna.zones
+    state: touch
+
+- name: Preserve resolv.conf from being overwriten
+  copy:
+   src: dhclient-enter-hooks
+   dest: /etc/dhcp/dhclient-enter-hooks
+   backup: yes
+
+- name: Enable and start named.service
+  service:
+    name: named
+    state: started
+    enabled: yes
+
+- name: Restart named.service
+  service:
+    name: named
+    state: restarted
+
+#- name: configure resolv.conf

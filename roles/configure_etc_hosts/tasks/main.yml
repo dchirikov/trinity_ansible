@@ -1,0 +1,38 @@
+- name: "Delete old lines (if any)"
+  lineinfile:
+    dest: /etc/hosts
+    regexp: ".*###ANSILBLE TAG###"
+    state: absent
+
+- name: "Install ipcalc"
+  yum:
+    name: initscripts
+    state: present
+
+# compute network for every record in nets
+- name: "Compute netmask"
+  command: /bin/bash -c "/usr/bin/ipcalc -n {{ item['network'] }} | /usr/bin/sed 's/.*=//'"
+  with_items: "{{ nets }}"
+  register: "r"
+
+- name: "Populate variable with computed network"
+  set_fact:
+    _nets: "{{ _nets|default([]) + [ { 'network': item.stdout, 'domain': item.item.domain} ] }}"
+  with_items: "{{ r.results }}"
+
+- name: "Add hosts records."
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ hostvars[inventory_hostname]['ansible_%s' | format(item[0])]['ipv4']['address'] }}\t{{ ansible_hostname }}.{{ item[1]['domain'] }}\t###ANSILBLE TAG###"
+#  debug:
+#    msg: "=== {{ hostvars[inventory_hostname]['ansible_%s' | format(item[0])]['ipv4']['address'] }}: {{ item[1]['domain'] }} "
+  when:
+    ( "{{ hostvars[inventory_hostname]['ansible_%s' | format(item[0])]['ipv4']['network'] }}"
+      == "{{ item[1]['network'] }}" )
+  with_nested: 
+   - "{{ ansible_interfaces }}"
+   - "{{ _nets }}"
+ 
+- name: "Add host alias"
+  debug:
+    msg: "=== {{ ansible_domain }}"

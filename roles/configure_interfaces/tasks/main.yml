@@ -1,0 +1,15 @@
+- name: Configure interfaces
+  template:
+    src: "ifcfg.j2"
+    dest: "/etc/sysconfig/network-scripts/ifcfg-{{ item.DEVICE }}"
+    backup: yes
+  with_items:
+    - "{{ c.interfaces }}"
+
+- name: Restart network
+  service:
+    name: network
+    state: restarted
+
+- name: Gather updated facts
+  setup:

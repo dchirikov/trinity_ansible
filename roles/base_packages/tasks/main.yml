@@ -1,0 +1,12 @@
+- name: prevent packages to install
+  lineinfile:
+    dest: /etc/yum.conf
+    state: present
+    regexp: '^exclude='
+    insertafter: 'distroverpkg=centos-release'
+    line: 'exclude=NetworkManager* plymouth*'
+
+- name: install base packages
+  yum: name="{{ item.name }}" state="{{ item.state }}"
+  with_items: "{{ packages }}"
+

@@ -1,0 +1,191 @@
+packages:
+  - name: plymouth*
+    state: removed
+
+  - name: vim
+    state: installed
+
+  - name: bash-completion
+    state: installed
+
+  - name: bc
+    state: installed
+
+  - name: bzip2
+    state: installed
+
+  - name: dejavu-sans-fonts
+    state: installed
+
+  - name: gawk
+    state: installed
+
+  - name: gzip
+    state: installed
+
+  - name: less
+    state: installed
+
+  - name: mlocate
+    state: installed
+
+  - name: ncurses-term
+    state: installed
+
+  - name: screen
+    state: installed
+
+  - name: time
+    state: installed
+
+  - name: tmux
+    state: installed
+
+  - name: tree
+    state: installed
+
+  - name: vim
+    state: installed
+
+  - name: xorg-x11-xauth
+    state: installed
+
+# network tools
+  - name: NetworkManager*
+    state: removed
+
+  - name: bind-utils
+    state: installed
+
+  - name: curl
+    state: installed
+
+  - name: ethtool
+    state: installed
+
+  - name: mtr
+    state: installed
+
+  - name: nc
+    state: installed
+
+  - name: net-tools
+    state: installed
+
+  - name: openssh-clients
+    state: installed
+
+  - name: openssh-server
+    state: installed
+
+  - name: rsync
+    state: installed
+
+  - name: tcpdump
+    state: installed
+
+  - name: telnet
+    state: installed
+
+  - name: wget
+    state: installed
+
+# system tools
+  - name: createrepo
+    state: installed
+
+  - name: dmidecode
+    state: installed
+
+  - name: gdisk
+    state: installed
+
+  - name: hdparm
+    state: installed
+
+  - name: ipmitool
+    state: installed
+
+  - name: kernel-tools
+    state: installed
+
+  - name: kernel-headers
+    state: installed
+
+  - name: kernel-devel
+    state: installed
+
+  - name: lm_sensors
+    state: installed
+
+  - name: lsof
+    state: installed
+
+  - name: mcelog
+    state: installed
+
+  - name: minicom
+    state: installed
+
+  - name: OpenIPMI
+    state: installed
+
+  - name: parted
+    state: installed
+
+  - name: pciutils
+    state: installed
+
+  - name: perf
+    state: installed
+
+  - name: psmisc
+    state: installed
+
+  - name: sg3_utils
+    state: installed
+
+  - name: smartmontools
+    state: installed
+
+  - name: strace
+    state: installed
+
+  - name: sudo
+    state: installed
+
+  - name: sysstat
+    state: installed
+
+  - name: usbutils
+    state: installed
+
+  - name: util-linux
+    state: installed
+
+  - name: yum-plugin-versionlock
+    state: installed
+
+  - name: yum-utils
+    state: installed
+
+# dev tools
+  - name: gcc
+    state: installed
+
+  - name: git
+    state: installed
+
+  - name: make
+    state: installed
+
+  - name: patch
+    state: installed
+
+# internal
+  - name: python-passlib
+    state: installed     # for lookup('password')
+
+# cv repo
+  - name: http://rpmbuild.clustervision.com/trinity/centos/7/clustervision-repo-1.0-tr7.el7.centos.x86_64.rpm
+    state: installed

@@ -1,0 +1,4 @@
+---
+dependencies:
+  - { role: standard_config }
+  - { role: configure_mysql }

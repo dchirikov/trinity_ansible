@@ -1,0 +1,32 @@
+---
+- hosts: "{{ host | default('localhost') }}"
+  remote_user: root
+  pre_tasks:
+  - name: Read variables
+    include_vars:
+      file: controller_vars.yml
+      name: c
+
+#- name: Setup controller
+
+  roles:
+#    - configure_hostname
+    - standard_config # will be invoked by configure_dns, configure_mysql or configure_slurm
+#    - role: configure_interfaces 
+#      nets: "{{ interfaces }}"
+#    - role: configure_etc_hosts
+#      nets: "{{ networks }}"
+#    - configure_base_repos
+#    - base_packages
+#    - configure_dns
+#    - configure_ssh
+#    - configure_mysql
+#    - configure_slurm
+
+#    - create_osimage
+
+#- hosts: luna-osimages
+#  remote_user: root
+#  roles:
+#    - install_basic
+#    - configure_ssh

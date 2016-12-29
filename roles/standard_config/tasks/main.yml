@@ -1,0 +1,67 @@
+#trix_path:
+#  root: "/trinity"
+#  home: "/trinity/home"
+#  images: "/trinity/images"
+#  shared: "/trinity/shared"
+#  local: "/trinity/local"
+
+- name: Define trix_path_* if c.trix_path exists in controller_vars.yml
+  set_fact:
+    trix_path_root:   "{{ c.trix_path.rool   | default('/trinity') }}"
+    trix_path_home:   "{{ c.trix_path.home   | default('/trinity/home') }}"
+    trix_path_images: "{{ c.trix_path.images | default('/trinity/images') }}"
+    trix_path_shared: "{{ c.trix_path.shared | default('/trinity/shared') }}"
+    trix_path_local:  "{{ c.trix_path.local  | default('/trinity/local') }}"
+  when: c.trix_path is defined
+
+- name: Define trix_path_* if c.trix_path does not exist in controller_vars.yml
+  set_fact:
+    trix_path_root:   "/trinity"
+    trix_path_home:   "/trinity/home"
+    trix_path_images:   "/trinity/images"
+    trix_path_shared:   "/trinity/shared"
+    trix_path_local:   "/trinity/local"
+  when: c.trix_path is undefined
+
+- name: Create default Trinity dirs
+  file:
+    name: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ trix_path_root }}"
+    - "{{ trix_path_home }}"
+    - "{{ trix_path_images }}"
+    - "{{ trix_path_shared }}"
+    - "{{ trix_path_local }}"
+
+- name: Create additinal Trinity dirs (if any)
+  file:
+    name: "{{ item.value }}"
+    state: directory
+  with_dict: "{{ c.trix_path  | default({}) }}"
+
+- name: Create {{ trix_path_shared }}/etc
+  file:
+    name: "{{ trix_path_shared }}/etc"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create {{ trix_path_local }}/etc
+  file:
+    name: "{{ trix_path_local }}/etc"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Figure out network layout
+  networks:
+    interfaces: "{{ c.interfaces }}"
+    facts: "{{ vars }}"
+  register: trix_networks
+
+- name: Print networks
+  debug:
+    msg: "{{ vars.trix_networks }}"
