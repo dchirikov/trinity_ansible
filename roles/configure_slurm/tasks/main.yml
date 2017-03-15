@@ -87,7 +87,7 @@
 - name: Aquire password for DB user (generate or use one from /etc/trinity/passwords)
   set_fact:
     slurm_db_pass: "{{ lookup('password',
-                          '/trinity/local/passwords/mysql/{{ slurm_db_user }}.txt  
+                          '/etc/trinity/passwords/mysql/{{ slurm_db_user }}.txt  
                            chars=ascii_letters,digits,hexdigits') }}"
 
 - name: Create DB for accounting

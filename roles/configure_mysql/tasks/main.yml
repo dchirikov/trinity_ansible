@@ -1,7 +1,7 @@
 - name: Aquire root password (generate or use one from /etc/trinity/passwords)
   set_fact:
     mysql_root_pwd: "{{ lookup('password',
-                          '/trinity/local/passwords/mysql/root.txt  
+                          '/etc/trinity/passwords/mysql/root.txt  
                            chars=ascii_letters,digits,hexdigits') }}"
 
 - name: Install MariaDB packages
