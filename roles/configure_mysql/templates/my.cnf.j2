@@ -1,11 +1,14 @@
 {{ ansible_managed | comment }}
 
 [client]
+socket={{ trix_path_local }}/var/lib/mysql/mysql.sock
 user=root
 password={{ mysql_root_pwd }}
 [mysql]
+socket={{ trix_path_local }}/var/lib/mysql/mysql.sock
 user=root
 password={{ mysql_root_pwd }}
 [mysqldump]
+socket={{ trix_path_local }}/var/lib/mysql/mysql.sock
 user=root
 password={{ mysql_root_pwd }}

@@ -13,6 +13,32 @@
     - mariadb-server
     - MySQL-python
 
+- name: Get /var/lib/mysql status
+  stat:
+    path: "/var/lib/mysql"
+  register: file_var_lib_mysql
+
+- name: Get /trinity/local/var/lib/mysql status
+  stat:
+    path: "{{ trix_path_local }}/var/lib/mysql"
+  register: file_trix_local_var_lib_mysql
+
+- name: Creates /trinity/local/var/lib
+  file:
+    path: "{{ trix_path_local }}/var/lib"
+    state: directory
+  when: file_trix_local_var_lib_mysql.stat.exists == False
+
+- name: Move /var/lib/mysql to /trinity/local dir
+  command: /usr/bin/mv /var/lib/mysql "{{ trix_path_local }}/var/lib/"
+  when: file_var_lib_mysql.stat.exists == True and file_var_lib_mysql.stat.isdir == True and file_trix_local_var_lib_mysql.stat.exists == False
+
+- name: Render /etc/my.cnf
+  template:
+    src: "etc_my.cnf.j2"
+    dest: "/etc/my.cnf"
+    backup: yes
+
 - name: Start MariaDB
   systemd:
     name: mariadb.service
