@@ -1,0 +1,63 @@
+- name: Aquire root password (generate or use one from /etc/trinity/passwords)
+  set_fact:
+    mongo_root_pwd: "{{ lookup('password',
+                          '/etc/trinity/passwords/mongo/root.txt  
+                           chars=ascii_letters,digits,hexdigits') }}"
+
+- name: Install MongoDB packages
+  yum:
+   name: "{{ item }}"
+   state: installed
+  with_items:
+    - mongodb-server
+    - python-pymongo
+    - mongodb
+
+- name: Get /var/lib/mongodb status
+  stat:
+    path: "/var/lib/mongodb"
+  register: file_var_lib_mongodb
+
+- name: Get /trinity/local/var/lib/mongodb status
+  stat:
+    path: "{{ trix_path_local }}/var/lib/mongodb"
+  register: file_trix_local_var_lib_mongodb
+
+- name: Creates /trinity/local/var/lib
+  file:
+    path: "{{ trix_path_local }}/var/lib"
+    state: directory
+  when: file_trix_local_var_lib_mongodb.stat.exists == False
+
+- name: Move /var/lib/mongodb to /trinity/local dir
+  command: /usr/bin/mv /var/lib/mongodb "{{ trix_path_local }}/var/lib/"
+  when: file_var_lib_mongodb.stat.exists == True and file_var_lib_mongodb.stat.isdir == True and file_trix_local_var_lib_mongodb.stat.exists == False
+
+- name: Render /etc/my.cnf
+  template:
+    src: "mongod.conf.j2"
+    dest: "/etc/mongod.conf"
+    backup: yes
+
+- name: Start MongoDB service
+  systemd:
+    name: mongod.service
+    state: started
+    enabled: yes
+
+
+- name: Check if /root/.mongorc.js exists
+  stat:
+    path: "/root/.mongorc.js"
+  register: file_mongorc_js
+
+- name: Create root user
+  command: "/usr/bin/mongo --eval \"db.createUser({user: 'root', pwd: '{{ mongo_root_pwd }}', roles: [ { role: 'root', db: 'admin' } ]})\" admin"
+  when: file_mongorc_js.stat.exists == False 
+
+- name: Render /root/.mongorc.js
+  template:
+    src: "mongorc.js.j2"
+    dest: "/root/.mongorc.js"
+    backup: yes
+  when: file_mongorc_js.stat.exists == False
