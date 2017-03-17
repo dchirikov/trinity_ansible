@@ -1,7 +1,7 @@
-- name: Aquire root password (generate or use one from /etc/trinity/passwords)
+- name: Aquire root password for MongoDB (generate or use one from /etc/trinity/passwords)
   set_fact:
     mongo_root_pwd: "{{ lookup('password',
-                          '/etc/trinity/passwords/mongo/root.txt  
+                          '/etc/trinity/passwords/mongo/root.txt
                            chars=ascii_letters,digits,hexdigits') }}"
 
 - name: Install MongoDB packages
@@ -53,7 +53,7 @@
 
 - name: Create root user
   command: "/usr/bin/mongo --eval \"db.createUser({user: 'root', pwd: '{{ mongo_root_pwd }}', roles: [ { role: 'root', db: 'admin' } ]})\" admin"
-  when: file_mongorc_js.stat.exists == False 
+  when: file_mongorc_js.stat.exists == False
 
 - name: Render /root/.mongorc.js
   template:
@@ -61,3 +61,21 @@
     dest: "/root/.mongorc.js"
     backup: yes
   when: file_mongorc_js.stat.exists == False
+
+- name: TEST 1/2. Insert document
+  shell: echo "db.test.insert({'a':'b'})" | /usr/bin/mongo
+  register: mongo_test_insert
+
+- name: TEST 1/2. Fail if unable to insert
+  fail:
+    msg: "Unable to insert document to MongoDB. stdout: {{ mongo_test_insert.stdout }}; stderr: {{ mongo_test_insert.stderr }}"
+  when: 'mongo_test_insert.stdout_lines[2] != "WriteResult({ \"nInserted\" : 1 })"'
+
+- name: TEST 2/2. Drop 'test' database
+  shell: echo "db.test.drop()" | /usr/bin/mongo
+  register: mongo_test_insert
+
+- name: TEST 2/2. Fail if unable to drop DB
+  fail:
+    msg: "Unable to drop 'test' db in MongoDB. stdout: {{ mongo_test_insert.stdout }}; stderr: {{ mongo_test_insert.stderr }}"
+  when: 'mongo_test_insert.stdout_lines[2] != "true"'
